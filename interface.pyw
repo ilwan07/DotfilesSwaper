@@ -3,7 +3,9 @@ import PyQt5.QtWidgets as qtw
 from PyQt5 import QtGui, QtCore
 from pathlib import Path
 import platformdirs
+import shutil
 import json
+import glob
 import sys
 import os
 
@@ -11,6 +13,9 @@ import os
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
         super().__init__()
+
+        # some variables
+        self.nbColumns = 3
 
         # basic setup
         self.appdataDir = Path(platformdirs.user_data_dir("DotfilesSwapper", appauthor="Ilwan"))
@@ -85,12 +90,34 @@ class MainWindow(qtw.QMainWindow):
 
     def createGrid(self):
         """build the UI for the scrollable main grid, with the list of dotfiles profiles"""
-        self.gridWidget = qtw.QWidget()
-        self.gridLayout = qtw.QGridLayout()
+        # basic structure with a scrollable area
+        self.gridScroll = qtw.QScrollArea()
+        self.gridScroll.setWidgetResizable(True)
+        self.gridScroll.setFrameShape(qtw.QFrame.NoFrame)
+        self.gridScrollWidget = qtw.QWidget()
+        self.gridScrollLayout = qtw.QGridLayout(self.gridScrollWidget)
+        self.gridScrollLayout.setAlignment(QtCore.Qt.AlignTop)
+        self.gridScroll.setWidget(self.gridScrollWidget)
+        self.mainLayout.addWidget(self.gridScroll, 1)
 
     def setupInterface(self):
-        """set up the interface with the proper values"""
+        """set up the interface with the proper values and items"""
+        # set the dotfiles path
         self.dotfilesPath.setText(self.settings["dotfilesPath"])
+
+        # load the profiles in the grid
+        self.loadProfiles()
+    
+    def loadProfiles(self):
+        """load the profiles in the grid"""
+        profiles = glob.glob(str(self.profilesDir / "*"))
+        for i, profile in enumerate(profiles):
+            profilePath = Path(profile)
+            profileName = profilePath.stem
+            profileWidget = profileDisplay(profileName)
+            profileWidget.edit.connect(self.editProfile)
+            profileWidget.delete.connect(self.deleteProfile)
+            self.gridScrollLayout.addWidget(profileWidget, i // self.nbColumns, i % self.nbColumns)
 
     def writeSettings(self, default:bool=False):
         """write the default settings to the settings file and load them"""
@@ -121,6 +148,35 @@ class MainWindow(qtw.QMainWindow):
     
     def newProfile(self, name:str=None):
         """create a new profile"""
+        if not name:
+            name, ok = qtw.QInputDialog.getText(self, "New profile", "Enter the name of the new profile:")
+            if not ok:
+                return
+            if not name:
+                return
+        profilePath = self.profilesDir / name
+        if profilePath.exists():
+            qtw.QMessageBox.critical(self, "Error", "A profile with this name already exists.")
+            return
+        
+        profilePath.mkdir(parents=True)
+        dotfilesPath = Path(self.settings["dotfilesPath"])
+        if dotfilesPath.exists() and dotfilesPath.is_dir():
+            for item in dotfilesPath.iterdir():
+                dest = profilePath / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dest)
+                else:
+                    shutil.copy2(item, dest)
+        else:
+            qtw.QMessageBox.critical(self, "Error", "The given dotfiles folder is invalid. Check that the folder exists.")
+
+    def editProfile(self, name:str):
+        """edit the properties of a profile"""
+        pass
+
+    def deleteProfile(self, name:str):
+        """delete a profile"""
         pass
 
 
