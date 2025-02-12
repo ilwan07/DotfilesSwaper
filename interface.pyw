@@ -26,8 +26,9 @@ class MainWindow(qtw.QMainWindow):
         self.settingsFile = self.appdataDir / "settings.json"
         if not self.settingsFile.exists():
             self.writeSettings(default=True)
-            self.newProfile(name="default")
+            createDefault = True
         else:
+            createDefault = False
             with open(self.settingsFile, "r", encoding="utf-8") as f:
                 self.settings = json.load(f)
 
@@ -40,6 +41,9 @@ class MainWindow(qtw.QMainWindow):
         self.createHeader()
         self.createGrid()
         self.setupInterface()
+
+        if createDefault:
+            self.newProfile(name="default")
     
     def createHeader(self):
         """build the UI for the header, with a few buttons and options"""
@@ -109,7 +113,14 @@ class MainWindow(qtw.QMainWindow):
         self.loadProfiles()
     
     def loadProfiles(self):
-        """load the profiles in the grid"""
+        """load the profiles in the grid, removes the previous ones if needed"""
+        # remove the previous profiles
+        for i in reversed(range(self.gridScrollLayout.count())):
+            widget = self.gridScrollLayout.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        # load the profiles
         profiles = glob.glob(str(self.profilesDir / "*"))
         for i, profile in enumerate(profiles):
             profilePath = Path(profile)
@@ -160,16 +171,25 @@ class MainWindow(qtw.QMainWindow):
             return
         
         profilePath.mkdir(parents=True)
+        profileDotfilesPath = profilePath / "dotfiles"
+        profileDotfilesPath.mkdir()
         dotfilesPath = Path(self.settings["dotfilesPath"])
         if dotfilesPath.exists() and dotfilesPath.is_dir():
             for item in dotfilesPath.iterdir():
-                dest = profilePath / item.name
+                dest = profileDotfilesPath / item.name
                 if item.is_dir():
-                    shutil.copytree(item, dest)
+                    try:
+                        shutil.copytree(item, dest)
+                    except Exception as e:
+                        print(f"Exception while copying the '{str(item)}' dir: {e}")
                 else:
-                    shutil.copy2(item, dest)
+                    try:
+                        shutil.copy2(item, dest)
+                    except Exception as e:
+                        print(f"Exception while copying the '{str(item)}' file: {e}")
+            self.loadProfiles()
         else:
-            qtw.QMessageBox.critical(self, "Error", "The given dotfiles folder is invalid. Check that the folder exists.")
+            qtw.QMessageBox.critical(self, "ErrsetupInterfaceor", "The given dotfiles folder is invalid. Check that the folder exists.")
 
     def editProfile(self, name:str):
         """edit the properties of a profile"""

@@ -12,6 +12,7 @@ class VSeparator(qtw.QFrame):
 class profileDisplay(qtw.QWidget):
     edit = QtCore.pyqtSignal(str)
     delete = QtCore.pyqtSignal(str)
+    load = QtCore.pyqtSignal(str)
 
     def __init__(self, name):
         super().__init__()
@@ -35,7 +36,7 @@ class profileDisplay(qtw.QWidget):
         self.mainLayout.addWidget(self.profileBanner)
 
         # profile description
-        self.profileDescription = qtw.QLabel("[profile description]")
+        self.profileDescription = qtw.QLabel("[description]")
         self.profileDescription.setFont(QtGui.QFont("Arial", 12))
         self.profileDescription.setWordWrap(True)
         self.profileDescription.setAlignment(QtCore.Qt.AlignCenter)
@@ -48,14 +49,20 @@ class profileDisplay(qtw.QWidget):
         self.buttonsWidget.setLayout(self.buttonsLayout)
         self.mainLayout.addWidget(self.buttonsWidget)
 
-        self.editButton = qtw.QPushButton("Edit properties")
+        self.editButton = qtw.QPushButton("Edit")
         self.editButton.setFixedHeight(40)
         self.editButton.setFont(QtGui.QFont("Arial", 14))
         self.editButton.clicked.connect(lambda: self.edit.emit(self.name))
         self.buttonsLayout.addWidget(self.editButton)
 
-        self.deleteButton = qtw.QPushButton("Delete profile")
+        self.deleteButton = qtw.QPushButton("Delete")
         self.deleteButton.setFixedHeight(40)
         self.deleteButton.setFont(QtGui.QFont("Arial", 14))
         self.deleteButton.clicked.connect(lambda: self.delete.emit(self.name))
         self.buttonsLayout.addWidget(self.deleteButton)
+
+        self.loadButton = qtw.QPushButton("Load profile")
+        self.loadButton.setFixedHeight(45)
+        self.loadButton.setFont(QtGui.QFont("Arial", 16))
+        self.loadButton.clicked.connect(lambda: self.load.emit(self.name))
+        self.mainLayout.addWidget(self.loadButton)
