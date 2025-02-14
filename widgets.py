@@ -66,3 +66,10 @@ class profileDisplay(qtw.QWidget):
         self.loadButton.setFont(QtGui.QFont("Arial", 16))
         self.loadButton.clicked.connect(lambda: self.load.emit(self.name))
         self.mainLayout.addWidget(self.loadButton)
+
+
+class flexGridWidget(qtw.QWidget):
+    def __init__(self):
+        """a widget that will hold a scrollable grid which will will adapt the number of columns to the available space on each resize"""
+        super().__init__()
+        pass  #TODO

@@ -110,9 +110,9 @@ class MainWindow(qtw.QMainWindow):
         self.dotfilesPath.setText(self.settings["dotfilesPath"])
 
         # load the profiles in the grid
-        self.loadProfiles()
+        self.displayProfiles()
     
-    def loadProfiles(self):
+    def displayProfiles(self):
         """load the profiles in the grid, removes the previous ones if needed"""
         # remove the previous profiles
         for i in reversed(range(self.gridScrollLayout.count())):
@@ -121,7 +121,7 @@ class MainWindow(qtw.QMainWindow):
                 widget.deleteLater()
 
         # load the profiles
-        profiles = glob.glob(str(self.profilesDir / "*"))
+        profiles = sorted(glob.glob(str(self.profilesDir / "*")))
         for i, profile in enumerate(profiles):
             profilePath = Path(profile)
             profileName = profilePath.stem
@@ -187,17 +187,21 @@ class MainWindow(qtw.QMainWindow):
                         shutil.copy2(item, dest)
                     except Exception as e:
                         print(f"Exception while copying the '{str(item)}' file: {e}")
-            self.loadProfiles()
+            self.displayProfiles()
         else:
-            qtw.QMessageBox.critical(self, "ErrsetupInterfaceor", "The given dotfiles folder is invalid. Check that the folder exists.")
+            qtw.QMessageBox.critical(self, "Dotfiles folder error", "The given dotfiles folder is invalid. Check that the folder exists.")
 
     def editProfile(self, name:str):
         """edit the properties of a profile"""
-        pass
+        pass  #TODO
 
     def deleteProfile(self, name:str):
         """delete a profile"""
-        pass
+        confirm = qtw.QMessageBox.warning(self, "Delete profile", f"Do you really want to delete '{name}'?", qtw.QMessageBox.Yes | qtw.QMessageBox.No)
+        if confirm == qtw.QMessageBox.Yes:
+            profilePath = self.profilesDir / name
+            shutil.rmtree(profilePath)
+            self.displayProfiles()
 
 
 def setDarkMode(App:qtw.QApplication):
