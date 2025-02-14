@@ -25,6 +25,7 @@ class profileDisplay(qtw.QWidget):
         # profile name
         self.profileName = qtw.QLabel(self.name)
         self.profileName.setFont(QtGui.QFont("Arial", 16))
+        self.profileName.setWordWrap(True)
         self.profileName.setAlignment(QtCore.Qt.AlignCenter)
         self.mainLayout.addWidget(self.profileName)
 
@@ -36,7 +37,7 @@ class profileDisplay(qtw.QWidget):
         self.mainLayout.addWidget(self.profileBanner)
 
         # profile description
-        self.profileDescription = qtw.QLabel("[description]")
+        self.profileDescription = qtw.QLabel()
         self.profileDescription.setFont(QtGui.QFont("Arial", 12))
         self.profileDescription.setWordWrap(True)
         self.profileDescription.setAlignment(QtCore.Qt.AlignCenter)

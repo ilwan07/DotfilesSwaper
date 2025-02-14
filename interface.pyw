@@ -7,7 +7,6 @@ import shutil
 import json
 import glob
 import sys
-import os
 
 
 class MainWindow(qtw.QMainWindow):
@@ -124,10 +123,14 @@ class MainWindow(qtw.QMainWindow):
         profiles = sorted(glob.glob(str(self.profilesDir / "*")))
         for i, profile in enumerate(profiles):
             profilePath = Path(profile)
-            profileName = profilePath.stem
+            profileName = profilePath.name
+            with open(profilePath / "properties.json", "r", encoding="utf-8") as f:
+                properties = json.load(f)
             profileWidget = profileDisplay(profileName)
+            profileWidget.profileDescription.setText(properties["description"])
             profileWidget.edit.connect(self.editProfile)
             profileWidget.delete.connect(self.deleteProfile)
+            profileWidget.load.connect(self.loadProfile)
             self.gridScrollLayout.addWidget(profileWidget, i // self.nbColumns, i % self.nbColumns)
 
     def writeSettings(self, default:bool=False):
@@ -165,12 +168,27 @@ class MainWindow(qtw.QMainWindow):
                 return
             if not name:
                 return
+            if "/" in name:
+                qtw.QMessageBox.critical(self, "Error", "The profile name cannot contain the '/' character.")
+                return
+
         profilePath = self.profilesDir / name
         if profilePath.exists():
             qtw.QMessageBox.critical(self, "Error", "A profile with this name already exists.")
             return
-        
         profilePath.mkdir(parents=True)
+        
+        description, ok = qtw.QInputDialog.getText(self, "New profile", "Enter a short profile description:")
+        if not ok:
+            description = ""
+
+        profileProperties = {
+            "name": name,
+            "description": description,
+        }
+        with open(profilePath / "properties.json", "w", encoding="utf-8") as f:
+            json.dump(profileProperties, f, indent=4)
+        
         profileDotfilesPath = profilePath / "dotfiles"
         profileDotfilesPath.mkdir()
         dotfilesPath = Path(self.settings["dotfilesPath"])
@@ -202,6 +220,10 @@ class MainWindow(qtw.QMainWindow):
             profilePath = self.profilesDir / name
             shutil.rmtree(profilePath)
             self.displayProfiles()
+    
+    def loadProfile(self, name:str):
+        """load a profile"""
+        pass #TODO
 
 
 def setDarkMode(App:qtw.QApplication):
