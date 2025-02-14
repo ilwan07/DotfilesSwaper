@@ -124,13 +124,24 @@ class MainWindow(qtw.QMainWindow):
         for i, profile in enumerate(profiles):
             profilePath = Path(profile)
             profileName = profilePath.name
+
             with open(profilePath / "properties.json", "r", encoding="utf-8") as f:
                 properties = json.load(f)
             profileWidget = profileDisplay(profileName)
             profileWidget.profileDescription.setText(properties["description"])
+
+            if (profilePath / "banner.png").exists():
+                bannerPath = str(profilePath / "banner.png")
+            else:
+                bannerPath = "assets/banner.png"
+            pixmap = QtGui.QPixmap(bannerPath)
+            scaledPixmap = pixmap.scaled(profileWidget.profileBanner.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            profileWidget.profileBanner.setPixmap(scaledPixmap)
+
             profileWidget.edit.connect(self.editProfile)
             profileWidget.delete.connect(self.deleteProfile)
             profileWidget.load.connect(self.loadProfile)
+
             self.gridScrollLayout.addWidget(profileWidget, i // self.nbColumns, i % self.nbColumns)
 
     def writeSettings(self, default:bool=False):
@@ -188,6 +199,12 @@ class MainWindow(qtw.QMainWindow):
         }
         with open(profilePath / "properties.json", "w", encoding="utf-8") as f:
             json.dump(profileProperties, f, indent=4)
+        
+        bannerPath = qtw.QFileDialog.getOpenFileName(self, "Select profile banner image", str(Path.home()), "Images (*.png *.jpg *.jpeg)")[0]
+        if bannerPath:
+            shutil.copy2(bannerPath, profilePath / "banner.png")
+        else:
+            shutil.copy2("assets/banner.png", profilePath / "banner.png")
         
         profileDotfilesPath = profilePath / "dotfiles"
         profileDotfilesPath.mkdir()
