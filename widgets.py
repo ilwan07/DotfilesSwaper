@@ -78,6 +78,8 @@ class profileEdit(qtw.QDialog):
         self.banner = banner
         self.description = description
 
+        self.imageSize = 200
+
         self.setWindowTitle("Edit Profile")
         self.setModal(True)
 
@@ -96,10 +98,10 @@ class profileEdit(qtw.QDialog):
         # profile banner image
         self.profileBanner = qtw.QLabel()
         pixmap = QtGui.QPixmap(self.banner)
-        scaled_pixmap = pixmap.scaledToHeight(100, QtCore.Qt.SmoothTransformation)
+        scaled_pixmap = pixmap.scaledToHeight(self.imageSize, QtCore.Qt.SmoothTransformation)
         self.profileBanner.setPixmap(scaled_pixmap)
         self.profileBanner.setAlignment(QtCore.Qt.AlignCenter)
-        self.profileBanner.setFixedHeight(100)
+        self.profileBanner.setFixedHeight(self.imageSize)
         self.mainLayout.addWidget(self.profileBanner)
 
         # profile description
@@ -127,7 +129,7 @@ class profileEdit(qtw.QDialog):
         newBanner = qtw.QFileDialog.getOpenFileName(self, "Select banner image", QtCore.QDir.homePath(), "Images (*.png *.jpg *.jpeg)")[0]
         if newBanner:
             self.banner = newBanner
-            self.profileBanner.setPixmap(QtGui.QPixmap(self.banner))
+            self.profileBanner.setPixmap(QtGui.QPixmap(self.banner).scaledToHeight(self.imageSize, QtCore.Qt.SmoothTransformation))
 
     def saveProfile(self):
         self.save.emit(self.name, self.profileName.text(), self.banner, self.profileDescription.toPlainText())

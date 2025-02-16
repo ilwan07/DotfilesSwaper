@@ -72,14 +72,14 @@ class MainWindow(qtw.QMainWindow):
         self.headerLayout.addWidget(self.dotfilesPath)
 
         self.dotfilesPathButton = qtw.QPushButton()
-        self.dotfilesPathButton.setIcon(QtGui.QIcon("assets/folder.png"))
+        self.dotfilesPathButton.setIcon(QtGui.QIcon(f"{Path(__file__).parent.resolve()}/assets/folder.png"))
         self.dotfilesPathButton.setIconSize(QtCore.QSize(30, 30))
         self.dotfilesPathButton.setFixedSize(40, 40)
         self.dotfilesPathButton.clicked.connect(self.chooseDotfilesPath)
         self.headerLayout.addWidget(self.dotfilesPathButton)
 
         self.resetdotfilesPathButton = qtw.QPushButton()
-        self.resetdotfilesPathButton.setIcon(QtGui.QIcon("assets/reset.png"))
+        self.resetdotfilesPathButton.setIcon(QtGui.QIcon(f"{Path(__file__).parent.resolve()}/assets/reset.png"))
         self.resetdotfilesPathButton.setIconSize(QtCore.QSize(30, 30))
         self.resetdotfilesPathButton.setFixedSize(40, 40)
         self.resetdotfilesPathButton.clicked.connect(self.resetDotfilesPath)
@@ -135,7 +135,7 @@ class MainWindow(qtw.QMainWindow):
             if (profilePath / "banner.png").exists():
                 bannerPath = str(profilePath / "banner.png")
             else:
-                bannerPath = "assets/banner.png"
+                bannerPath = f"{Path(__file__).parent.resolve()}/assets/banner.png"
             pixmap = QtGui.QPixmap(bannerPath)
             scaledPixmap = pixmap.scaled(profileWidget.profileBanner.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             profileWidget.profileBanner.setPixmap(scaledPixmap)
@@ -206,7 +206,7 @@ class MainWindow(qtw.QMainWindow):
         if bannerPath:
             shutil.copy2(bannerPath, profilePath / "banner.png")
         else:
-            shutil.copy2("assets/banner.png", profilePath / "banner.png")
+            shutil.copy2(f"{Path(__file__).parent.resolve()}/assets/banner.png", profilePath / "banner.png")
         
         profileDotfilesPath = profilePath / "dotfiles"
         profileDotfilesPath.mkdir()
@@ -234,13 +234,35 @@ class MainWindow(qtw.QMainWindow):
         profilePath = self.profilesDir / name
         with open(profilePath / "properties.json", "r", encoding="utf-8") as f:
             properties = json.load(f)
-        editWindow = profileEdit(name, str(profilePath / "banner.png"), properties["description"])
+        if (profilePath / "banner.png").exists():
+            bannerPath = str(profilePath / "banner.png")
+        else:
+            bannerPath = f"{Path(__file__).parent.resolve()}/assets/banner.png"
+        editWindow = profileEdit(name, str(bannerPath), properties["description"])
         editWindow.save.connect(self.saveProfileSettings)
         editWindow.exec_()
     
     def saveProfileSettings(self, name:str, newname:str, banner:str, description:str):
         """save the new settings of a profile"""
-        pass  #TODO
+        if name != newname:
+            oldPath = self.profilesDir / name
+            newPath = self.profilesDir / newname
+            oldPath.rename(newPath)
+        profilePath = self.profilesDir / newname
+        profileProperties = {
+            "name": newname,
+            "description": description,
+        }
+        with open(profilePath / "properties.json", "w", encoding="utf-8") as f:
+            json.dump(profileProperties, f, indent=4)
+        profilePath = self.profilesDir / newname
+        if banner and str(Path(banner)) != str(profilePath / "banner.png"):
+            bannerDest = profilePath / "banner.png"
+            if bannerDest.exists():
+                bannerDest.unlink()
+            shutil.copy2(banner, bannerDest)
+        self.displayProfiles()
+        qtw.QMessageBox.information(self, "Profile updated", f"The profile '{newname}' has been successfully updated.")
 
     def deleteProfile(self, name:str):
         """delete a profile"""
