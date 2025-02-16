@@ -19,7 +19,6 @@ class profileDisplay(qtw.QWidget):
         self.name = name
 
         self.mainLayout = qtw.QVBoxLayout()
-        self.mainLayout.setAlignment(QtCore.Qt.AlignCenter)
         self.setLayout(self.mainLayout)
 
         # profile name
@@ -34,6 +33,8 @@ class profileDisplay(qtw.QWidget):
         self.profileBanner.setMaximumWidth(300)
         self.profileBanner.setFixedHeight(200)
         self.profileBanner.setAlignment(QtCore.Qt.AlignCenter)
+        self.profileBanner.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Fixed)
+        self.profileBanner.setScaledContents(True)
         self.mainLayout.addWidget(self.profileBanner)
 
         # profile description

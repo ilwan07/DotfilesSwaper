@@ -3,7 +3,9 @@ import PyQt5.QtWidgets as qtw
 from PyQt5 import QtGui, QtCore
 from pathlib import Path
 import platformdirs
+import subprocess
 import shutil
+import time
 import json
 import glob
 import sys
@@ -240,7 +242,49 @@ class MainWindow(qtw.QMainWindow):
     
     def loadProfile(self, name:str):
         """load a profile"""
-        pass #TODO
+        confirm = qtw.QMessageBox.warning(self, "Load profile", f"Do you really want to load '{name}'?\nThis will COMPLETELY OVERWRITE your dotfiles folder!\nIt is recommended to close all apps before proceding", qtw.QMessageBox.Yes | qtw.QMessageBox.No)
+        if confirm == qtw.QMessageBox.Yes:
+            profilePath = self.profilesDir / name / "dotfiles"
+            dotfilesPath = Path(self.settings["dotfilesPath"])
+            if dotfilesPath.exists() and dotfilesPath.is_dir():
+                # remove the previous dotfiles
+                for item in dotfilesPath.iterdir():
+                    if item.is_dir():
+                        try:
+                            shutil.rmtree(item)
+                        except Exception as e:
+                            print(f"Exception while removing the '{str(item)}' dir: {e}")
+                    elif item.is_file() or item.is_symlink():
+                        try:
+                            item.unlink()
+                        except Exception as e:
+                            print(f"Exception while removing the '{str(item)}' file/symlink: {e}")
+                    else:
+                        print(f"Unknown item type: {item}")
+                
+                time.sleep(1)  # wait a bit to make sure the previous dotfiles are removed
+                
+                # copy the new dotfiles
+                for item in profilePath.iterdir():
+                    dest = dotfilesPath / item.name
+                    if item.is_dir():
+                        try:
+                            shutil.copytree(item, dest, dirs_exist_ok=True)
+                        except Exception as e:
+                            print(f"Exception while copying the '{str(item)}' dir: {e}")
+                    elif item.is_file() or item.is_symlink():
+                        try:
+                            shutil.copy2(item, dest)
+                        except Exception as e:
+                            print(f"Exception while copying the '{str(item)}' file/symlink: {e}")
+                    else:
+                        print(f"Unknown item type: {item}")
+                subprocess.run(["hyprctl", "reload"], check=True)
+
+                qtw.QMessageBox.information(self, "Profile loaded", f"The profile '{name}' has been successfully loaded.")
+            
+            else:
+                qtw.QMessageBox.critical(self, "Dotfiles folder error", "The given dotfiles folder is invalid. Check that the folder exists.")
 
 
 def setDarkMode(App:qtw.QApplication):
