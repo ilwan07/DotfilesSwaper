@@ -19,6 +19,7 @@ class profileDisplay(qtw.QWidget):
         self.name = name
 
         self.mainLayout = qtw.QVBoxLayout()
+        self.mainLayout.setAlignment(QtCore.Qt.AlignCenter)
         self.setLayout(self.mainLayout)
 
         # profile name
@@ -33,8 +34,6 @@ class profileDisplay(qtw.QWidget):
         self.profileBanner.setMaximumWidth(300)
         self.profileBanner.setFixedHeight(200)
         self.profileBanner.setAlignment(QtCore.Qt.AlignCenter)
-        self.profileBanner.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Fixed)
-        self.profileBanner.setScaledContents(True)
         self.mainLayout.addWidget(self.profileBanner)
 
         # profile description
@@ -68,6 +67,71 @@ class profileDisplay(qtw.QWidget):
         self.loadButton.setFont(QtGui.QFont("Arial", 16))
         self.loadButton.clicked.connect(lambda: self.load.emit(self.name))
         self.mainLayout.addWidget(self.loadButton)
+
+
+class profileEdit(qtw.QDialog):
+    save = QtCore.pyqtSignal(str, str, str, str)
+
+    def __init__(self, name: str, banner: str, description: str):
+        super().__init__()
+        self.name = name
+        self.banner = banner
+        self.description = description
+
+        self.setWindowTitle("Edit Profile")
+        self.setModal(True)
+
+        self.mainLayout = qtw.QVBoxLayout()
+        self.mainLayout.setAlignment(QtCore.Qt.AlignCenter)
+        self.setLayout(self.mainLayout)
+
+        # profile name
+        self.profileName = qtw.QLineEdit(self.name)
+        self.profileName.setFixedHeight(40)
+        self.profileName.setPlaceholderText("Profile name")
+        self.profileName.setFont(QtGui.QFont("Arial", 16))
+        self.profileName.setAlignment(QtCore.Qt.AlignCenter)
+        self.mainLayout.addWidget(self.profileName)
+
+        # profile banner image
+        self.profileBanner = qtw.QLabel()
+        pixmap = QtGui.QPixmap(self.banner)
+        scaled_pixmap = pixmap.scaledToHeight(100, QtCore.Qt.SmoothTransformation)
+        self.profileBanner.setPixmap(scaled_pixmap)
+        self.profileBanner.setAlignment(QtCore.Qt.AlignCenter)
+        self.profileBanner.setFixedHeight(100)
+        self.mainLayout.addWidget(self.profileBanner)
+
+        # profile description
+        self.profileDescription = qtw.QTextEdit(self.description)
+        self.profileDescription.setPlaceholderText("Profile description")
+        self.profileDescription.setFont(QtGui.QFont("Arial", 12))
+        self.profileDescription.setAlignment(QtCore.Qt.AlignCenter)
+        self.mainLayout.addWidget(self.profileDescription)
+
+        # profile banner
+        self.bannerButton = qtw.QPushButton("Change banner")
+        self.bannerButton.setFixedHeight(40)
+        self.bannerButton.setFont(QtGui.QFont("Arial", 14))
+        self.bannerButton.clicked.connect(self.changeBanner)
+        self.mainLayout.addWidget(self.bannerButton)
+
+        # save button
+        self.saveButton = qtw.QPushButton("Save")
+        self.saveButton.setFixedHeight(40)
+        self.saveButton.setFont(QtGui.QFont("Arial", 14))
+        self.saveButton.clicked.connect(self.saveProfile)
+        self.mainLayout.addWidget(self.saveButton)
+
+    def changeBanner(self):
+        newBanner = qtw.QFileDialog.getOpenFileName(self, "Select banner image", QtCore.QDir.homePath(), "Images (*.png *.jpg *.jpeg)")[0]
+        if newBanner:
+            self.banner = newBanner
+            self.profileBanner.setPixmap(QtGui.QPixmap(self.banner))
+
+    def saveProfile(self):
+        self.save.emit(self.name, self.profileName.text(), self.banner, self.profileDescription.toPlainText())
+        self.accept()
 
 
 class flexGridWidget(qtw.QWidget):

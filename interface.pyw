@@ -225,11 +225,21 @@ class MainWindow(qtw.QMainWindow):
                     except Exception as e:
                         print(f"Exception while copying the '{str(item)}' file: {e}")
             self.displayProfiles()
+            qtw.QMessageBox.information(self, "Profile created", f"The profile '{name}' has been successfully created.")
         else:
             qtw.QMessageBox.critical(self, "Dotfiles folder error", "The given dotfiles folder is invalid. Check that the folder exists.")
 
     def editProfile(self, name:str):
         """edit the properties of a profile"""
+        profilePath = self.profilesDir / name
+        with open(profilePath / "properties.json", "r", encoding="utf-8") as f:
+            properties = json.load(f)
+        editWindow = profileEdit(name, str(profilePath / "banner.png"), properties["description"])
+        editWindow.save.connect(self.saveProfileSettings)
+        editWindow.exec_()
+    
+    def saveProfileSettings(self, name:str, newname:str, banner:str, description:str):
+        """save the new settings of a profile"""
         pass  #TODO
 
     def deleteProfile(self, name:str):
@@ -239,6 +249,7 @@ class MainWindow(qtw.QMainWindow):
             profilePath = self.profilesDir / name
             shutil.rmtree(profilePath)
             self.displayProfiles()
+            qtw.QMessageBox.information(self, "Profile deleted", f"The profile '{name}' has been successfully deleted.")
     
     def loadProfile(self, name:str):
         """load a profile"""
