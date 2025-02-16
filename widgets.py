@@ -70,7 +70,8 @@ class profileDisplay(qtw.QWidget):
 
 
 class profileEdit(qtw.QDialog):
-    save = QtCore.pyqtSignal(str, str, str, str)
+    saveSignal = QtCore.pyqtSignal(str, str, str, str)
+    updateSignal = QtCore.pyqtSignal(str)
 
     def __init__(self, name: str, banner: str, description: str):
         super().__init__()
@@ -118,6 +119,13 @@ class profileEdit(qtw.QDialog):
         self.bannerButton.clicked.connect(self.changeBanner)
         self.mainLayout.addWidget(self.bannerButton)
 
+        # update files
+        self.updateFilesButton = qtw.QPushButton("Update files")
+        self.updateFilesButton.setFixedHeight(40)
+        self.updateFilesButton.setFont(QtGui.QFont("Arial", 14))
+        self.updateFilesButton.clicked.connect(self.updateFiles)
+        self.mainLayout.addWidget(self.updateFilesButton)
+
         # save button
         self.saveButton = qtw.QPushButton("Save")
         self.saveButton.setFixedHeight(40)
@@ -126,14 +134,21 @@ class profileEdit(qtw.QDialog):
         self.mainLayout.addWidget(self.saveButton)
 
     def changeBanner(self):
+        """browse for a new banner image"""
         newBanner = qtw.QFileDialog.getOpenFileName(self, "Select banner image", QtCore.QDir.homePath(), "Images (*.png *.jpg *.jpeg)")[0]
         if newBanner:
             self.banner = newBanner
             self.profileBanner.setPixmap(QtGui.QPixmap(self.banner).scaledToHeight(self.imageSize, QtCore.Qt.SmoothTransformation))
+    
+    def updateFiles(self):
+        """update the files of the profile"""
+        self.updateSignal.emit(self.name)
+        self.close()
 
     def saveProfile(self):
-        self.save.emit(self.name, self.profileName.text(), self.banner, self.profileDescription.toPlainText())
-        self.accept()
+        """save the profile"""
+        self.saveSignal.emit(self.name, self.profileName.text(), self.banner, self.profileDescription.toPlainText())
+        self.close()
 
 
 class flexGridWidget(qtw.QWidget):

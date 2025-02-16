@@ -1,1 +1,1 @@
-'banner.png' image by pngtree.com, inverted colors
+"assets/banner.png" image by pngtree.com (inverted colors) -> https://pngtree.com/freepng/vector-picture-icon_4013511.html

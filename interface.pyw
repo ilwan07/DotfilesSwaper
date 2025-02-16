@@ -173,7 +173,7 @@ class MainWindow(qtw.QMainWindow):
         """open the folder containing the profile files"""
         QtCore.QProcess.startDetached("xdg-open", [str(self.profilesDir)])
     
-    def newProfile(self, name:str=None):
+    def newProfile(self, name:str=None, description:str=None, auto:bool=False):
         """create a new profile"""
         if not name:
             name, ok = qtw.QInputDialog.getText(self, "New profile", "Enter the name of the new profile:")
@@ -191,9 +191,10 @@ class MainWindow(qtw.QMainWindow):
             return
         profilePath.mkdir(parents=True)
         
-        description, ok = qtw.QInputDialog.getText(self, "New profile", "Enter a short profile description:")
-        if not ok:
-            description = ""
+        if not description:
+            description, ok = qtw.QInputDialog.getText(self, "New profile", "Enter a short profile description:")
+            if not ok:
+                description = ""
 
         profileProperties = {
             "name": name,
@@ -202,11 +203,12 @@ class MainWindow(qtw.QMainWindow):
         with open(profilePath / "properties.json", "w", encoding="utf-8") as f:
             json.dump(profileProperties, f, indent=4)
         
-        bannerPath = qtw.QFileDialog.getOpenFileName(self, "Select profile banner image", str(Path.home()), "Images (*.png *.jpg *.jpeg)")[0]
-        if bannerPath:
-            shutil.copy2(bannerPath, profilePath / "banner.png")
-        else:
-            shutil.copy2(f"{Path(__file__).parent.resolve()}/assets/banner.png", profilePath / "banner.png")
+        if not auto:
+            bannerPath = qtw.QFileDialog.getOpenFileName(self, "Select profile banner image", str(Path.home()), "Images (*.png *.jpg *.jpeg)")[0]
+            if bannerPath:
+                shutil.copy2(bannerPath, profilePath / "banner.png")
+            else:
+                shutil.copy2(f"{Path(__file__).parent.resolve()}/assets/banner.png", profilePath / "banner.png")
         
         profileDotfilesPath = profilePath / "dotfiles"
         profileDotfilesPath.mkdir()
@@ -225,7 +227,8 @@ class MainWindow(qtw.QMainWindow):
                     except Exception as e:
                         print(f"Exception while copying the '{str(item)}' file: {e}")
             self.displayProfiles()
-            qtw.QMessageBox.information(self, "Profile created", f"The profile '{name}' has been successfully created.")
+            if not auto:
+                qtw.QMessageBox.information(self, "Profile created", f"The profile '{name}' has been successfully created.")
         else:
             qtw.QMessageBox.critical(self, "Dotfiles folder error", "The given dotfiles folder is invalid. Check that the folder exists.")
 
@@ -239,7 +242,8 @@ class MainWindow(qtw.QMainWindow):
         else:
             bannerPath = f"{Path(__file__).parent.resolve()}/assets/banner.png"
         editWindow = profileEdit(name, str(bannerPath), properties["description"])
-        editWindow.save.connect(self.saveProfileSettings)
+        editWindow.saveSignal.connect(self.saveProfileSettings)
+        editWindow.updateSignal.connect(self.updateProfileFiles)
         editWindow.exec_()
     
     def saveProfileSettings(self, name:str, newname:str, banner:str, description:str):
@@ -255,14 +259,37 @@ class MainWindow(qtw.QMainWindow):
         }
         with open(profilePath / "properties.json", "w", encoding="utf-8") as f:
             json.dump(profileProperties, f, indent=4)
-        profilePath = self.profilesDir / newname
-        if banner and str(Path(banner)) != str(profilePath / "banner.png"):
+        if banner and str(Path(banner)) != str(profilePath / "banner.png") and str(Path(banner)) != str(oldPath / "banner.png") and Path(banner).exists():
             bannerDest = profilePath / "banner.png"
             if bannerDest.exists():
                 bannerDest.unlink()
             shutil.copy2(banner, bannerDest)
         self.displayProfiles()
         qtw.QMessageBox.information(self, "Profile updated", f"The profile '{newname}' has been successfully updated.")
+    
+    def updateProfileFiles(self, name:str):
+        """update the files of a profile"""
+        confirm = qtw.QMessageBox.warning(self, "Update files", f"Do you really want to update the files of '{name}'?\nThis will COMPLETELY OVERWRITE the current profile files!", qtw.QMessageBox.Yes | qtw.QMessageBox.No)
+        if confirm == qtw.QMessageBox.Yes:
+            profilePath = self.profilesDir / name
+
+            # save data and remove the previous profile
+            with open(profilePath / "properties.json", "r", encoding="utf-8") as f:
+                properties = json.load(f)
+            with open(profilePath / "banner.png", "rb") as f:
+                banner = f.read()
+            shutil.rmtree(profilePath)
+
+            # recreate the profile
+            self.newProfile(name=name, description=properties["description"], auto=True)
+            time.sleep(0.5)
+            with open(profilePath / "properties.json", "w", encoding="utf-8") as f:
+                json.dump(properties, f, indent=4)
+            with open(profilePath / "banner.png", "wb") as f:
+                f.write(banner)
+            self.displayProfiles()
+            
+            qtw.QMessageBox.information(self, "Profile updated", f"The profile '{name}' has been successfully updated.")
 
     def deleteProfile(self, name:str):
         """delete a profile"""
@@ -295,7 +322,7 @@ class MainWindow(qtw.QMainWindow):
                     else:
                         print(f"Unknown item type: {item}")
                 
-                time.sleep(1)  # wait a bit to make sure the previous dotfiles are removed
+                time.sleep(0.5)
                 
                 # copy the new dotfiles
                 for item in profilePath.iterdir():
